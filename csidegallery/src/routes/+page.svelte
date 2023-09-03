@@ -19,28 +19,20 @@
 		_db = new SQL.Database();
 	}
 
-	async function initDB() {
-		console.log('Initializing DB');
+	async function closeDB() {
+		console.log('Closing DB');
 
 		if (_db === undefined) {
 			console.error('DB is undefined');
 			return;
 		}
 
-		try {
-			// Create a table "images" with the columns, path, name, descrption, and tags
-			_db.run(`
-            CREATE TABLE images (
-                path TEXT,
-                name TEXT,
-                description TEXT
-            );
-        `);
-		} catch (e) {
-			console.error('exception creating table: ', e);
-			return;
-		}
+		// Close the database connection
+		_db.close();
+	}
 
+	// A temp function that does nothing
+	async () => {
 		try {
 			_db.run(`
             INSERT INTO images (path, name, description)
@@ -74,6 +66,111 @@
 			console.error('exception selecting data: ', e);
 			return;
 		}
+	};
+
+	async function initDB() {
+		console.log('Initializing DB');
+
+		if (_db === undefined) {
+			console.error('DB is undefined');
+			return;
+		}
+
+		try {
+			// Create a table "images" with the columns, id, path, title, description
+			_db.run(`
+				CREATE TABLE images (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					path TEXT,
+					name TEXT,
+					description TEXT
+				);
+			`);
+			// Create a table "tagmap" with the columns, id, image_id, tag_id
+			_db.run(`
+				CREATE TABLE tagmap (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					image_id INTEGER,
+					tag_id INTEGER
+				);
+			`);
+			// Create a table "tags" with the columns, id, name
+			_db.run(`
+				CREATE TABLE tags (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					name TEXT
+				);
+			`);
+		} catch (e) {
+			console.error('exception creating tables: ', e);
+			return;
+		}
+	}
+
+	// A function that takes a list of image paths and inserts them into the database
+	async function insertImages(imagePaths: string[]) {
+		console.log('Inserting images');
+
+		if (_db === undefined) {
+			console.error('DB is undefined');
+			return;
+		}
+
+		try {
+			// Prepare a statement
+			const stmt = _db.prepare(`
+				INSERT INTO images (path, name, description)
+				VALUES
+					(:path, :name, :description);
+			`);
+
+			// Bind values to the parameters and execute the statement
+			for (const imagePath of imagePaths) {
+				stmt.run({
+					':path': imagePath,
+					':name': 'Image Name',
+					':description': 'Image Description'
+				});
+			}
+		} catch (e) {
+			console.error('exception inserting data: ', e);
+			return;
+		}
+	}
+
+	async function testInsertImages() {
+		const someImagePaths: Array<string> = ['/images/1.jpg', '/images/2.jpg', '/images/3.jpg'];
+		await insertImages(someImagePaths);
+	}
+
+	async function listImages() {
+		console.log('Listing images');
+
+		if (_db === undefined) {
+			console.error('DB is undefined');
+			return;
+		}
+
+		try {
+			// Prepare a statement
+			const stmt = _db.prepare(`
+				SELECT * 
+				FROM images;
+			`);
+
+			stmt.getAsObject({ $start: 1, $end: 1 }); // {col1:1, col2:111}
+
+			// Bind new values
+			stmt.bind({ $start: 1, $end: 2 });
+			while (stmt.step()) {
+				//
+				const row = stmt.getAsObject();
+				console.log('Here is a row: ' + JSON.stringify(row));
+			}
+		} catch (e) {
+			console.error('exception selecting data: ', e);
+			return;
+		}
 	}
 </script>
 
@@ -82,3 +179,7 @@
 <button on:click={openDB}>Open DB</button>
 
 <button on:click={initDB}>Init DB</button>
+
+<button on:click={testInsertImages}>Insert Images</button>
+
+<button on:click={listImages}>List Images</button>
