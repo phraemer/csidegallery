@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button, { Label } from '@smui/button';
 	import initSqlJs from 'sql.js';
 	// Create a global variable to store the database
 
@@ -176,10 +177,18 @@
 
 <h1>Testing sql.js</h1>
 
-<button on:click={openDB}>Open DB</button>
+<Button on:click={openDB}>
+	<Label>Open DB</Label>
+</Button>
 
-<button on:click={initDB}>Init DB</button>
+<Button on:click={initDB}>
+	<Label>Init DB</Label>
+</Button>
 
-<button on:click={testInsertImages}>Insert Images</button>
+<Button on:click={testInsertImages}>
+	<Label>Insert Images</Label>
+</Button>
 
-<button on:click={listImages}>List Images</button>
+<Button on:click={listImages}>
+	<Label>List Images</Label>
+</Button>
