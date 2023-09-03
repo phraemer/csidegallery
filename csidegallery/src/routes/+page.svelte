@@ -1,10 +1,23 @@
 <script lang="ts">
 	import Button, { Label } from '@smui/button';
+	import DataTable, { Head, Body, Row, Cell } from '@smui/data-table';
+	import Checkbox from '@smui/checkbox';
+
 	import initSqlJs from 'sql.js';
 	// Create a global variable to store the database
 
 	// let _db: initSqlJs.Database | undefined;
 	let _db: initSqlJs.Database;
+
+	// delclare a type image which is an object with the properties title, description, and path
+	type image = {
+		title: string;
+		description: string;
+		path: string;
+	};
+
+	// declare images to be an array of image objects
+	let images: Array<image> = [];
 
 	// A function that opens a database
 	async function openDB() {
@@ -36,7 +49,7 @@
 	async () => {
 		try {
 			_db.run(`
-            INSERT INTO images (path, name, description)
+            INSERT INTO images (path, title, description)
             VALUES
                 ('/images/1.jpg', 'Image 1', 'This is the first image'),
                 ('/images/2.jpg', 'Image 2', 'This is the second image'),
@@ -83,7 +96,7 @@
 				CREATE TABLE images (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
 					path TEXT,
-					name TEXT,
+					title TEXT,
 					description TEXT
 				);
 			`);
@@ -120,7 +133,7 @@
 		try {
 			// Prepare a statement
 			const stmt = _db.prepare(`
-				INSERT INTO images (path, name, description)
+				INSERT INTO images (path, title, description)
 				VALUES
 					(:path, :name, :description);
 			`);
@@ -129,7 +142,7 @@
 			for (const imagePath of imagePaths) {
 				stmt.run({
 					':path': imagePath,
-					':name': 'Image Name',
+					':title': 'Image Title',
 					':description': 'Image Description'
 				});
 			}
@@ -167,6 +180,10 @@
 				//
 				const row = stmt.getAsObject();
 				console.log('Here is a row: ' + JSON.stringify(row));
+				const nextTitle: string = row.title?.toLocaleString()!;
+				const nextDescription: string = row.description?.toLocaleString()!;
+				const nextPath: string = row.path?.toLocaleString()!;
+				images.push({ title: nextTitle, description: nextDescription, path: nextPath });
 			}
 		} catch (e) {
 			console.error('exception selecting data: ', e);
@@ -175,7 +192,27 @@
 	}
 </script>
 
-<h1>Testing sql.js</h1>
+<DataTable style="max-width: 100%;">
+	<Head>
+		<Row>
+			<Cell checkbox>
+				<Checkbox />
+			</Cell>
+			<Cell>Title</Cell>
+			<Cell>Description</Cell>
+			<Cell>Path</Cell>
+		</Row>
+	</Head>
+	<Body>
+		{#each images as image (image.title)}
+			<Row>
+				<Cell>{image.title}</Cell>
+				<Cell>{image.description}</Cell>
+				<Cell>{image.path}</Cell>
+			</Row>
+		{/each}
+	</Body>
+</DataTable>
 
 <Button on:click={openDB}>
 	<Label>Open DB</Label>
