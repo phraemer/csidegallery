@@ -125,15 +125,16 @@
 			const stmt = _db.prepare(`
 				INSERT INTO images (path, title, description)
 				VALUES
-					(:path, :name, :description);
+					(:path, :title, :description);
 			`);
 
 			// Bind values to the parameters and execute the statement
+			let i = 1;
 			for (const imagePath of imagePaths) {
 				stmt.run({
 					':path': imagePath,
-					':title': 'Image Title',
-					':description': 'Image Description'
+					':title': 'Image Title' + i,
+					':description': 'Image Description ' + i++
 				});
 			}
 		} catch (e) {
