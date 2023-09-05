@@ -2,18 +2,23 @@
 	import Button, { Label } from '@smui/button';
 	import DataTable, { Head, Body, Row, Cell } from '@smui/data-table';
 	import Checkbox from '@smui/checkbox';
-
+	import { onMount } from 'svelte';
 	import { openDB, initDB, testInsertImages, listImages, type image } from '$lib/SQL.svelte';
 
 	let images: Array<image> = [];
 
 	async function updateImages() {
-		console.log('Listing images');
+		try {
+			console.log('Listing images');
 
-		images = await listImages();
+			images = await listImages();
+		} catch (e) {
+			console.error('exception selecting data: ', e);
+			return;
+		}
+
+		console.log('images: ' + JSON.stringify(images));
 	}
-
-	import { onMount } from 'svelte';
 
 	onMount(async () => {
 		await openDB();
@@ -44,6 +49,6 @@
 	</Body>
 </DataTable>
 
-<Button on:click={listImages}>
+<Button on:click={updateImages}>
 	<Label>List Images</Label>
 </Button>
