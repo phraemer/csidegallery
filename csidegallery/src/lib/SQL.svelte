@@ -1,88 +1,88 @@
 <script context="module" lang="ts">
-	import initSqlJs from 'sql.js';
+  import initSqlJs from 'sql.js';
 
-	export type image = {
-		title: string;
-		description: string;
-		path: string;
-	};
+  export type image = {
+    title: string;
+    description: string;
+    path: string;
+  };
 
-	let _db: initSqlJs.Database;
+  let _db: initSqlJs.Database;
 
-	// A function that opens a database
-	export async function openDB() {
-		console.log('Opening DB');
+  // A function that opens a database
+  export async function openDB() {
+    console.log('Opening DB');
 
-		const SQL = await initSqlJs({
-			// Required to load the wasm binary asynchronously. Of course, you can host it wherever you want
-			// You can omit locateFile completely when running in node
-			locateFile: (file: any) => `https://sql.js.org/dist/${file}`
-		});
+    const SQL = await initSqlJs({
+      // Required to load the wasm binary asynchronously. Of course, you can host it wherever you want
+      // You can omit locateFile completely when running in node
+      locateFile: (file: any) => `https://sql.js.org/dist/${file}`
+    });
 
-		// Create a database
-		_db = new SQL.Database();
-	}
+    // Create a database
+    _db = new SQL.Database();
+  }
 
-	export async function closeDB() {
-		console.log('Closing DB');
+  export async function closeDB() {
+    console.log('Closing DB');
 
-		if (_db === undefined) {
-			console.error('DB is undefined');
-			return;
-		}
+    if (_db === undefined) {
+      console.error('DB is undefined');
+      return;
+    }
 
-		// Close the database connection
-		_db.close();
-	}
+    // Close the database connection
+    _db.close();
+  }
 
-	// A temp function that does nothing
-	async () => {
-		try {
-			_db.run(`
+  // A temp function that does nothing
+  async () => {
+    try {
+      _db.run(`
             INSERT INTO images (path, title, description)
             VALUES
                 ('/images/1.jpg', 'Image 1', 'This is the first image'),
                 ('/images/2.jpg', 'Image 2', 'This is the second image'),
                 ('/images/3.jpg', 'Image 3', 'This is the third image');
         `);
-		} catch (e) {
-			console.error('exception inserting data: ', e);
-			return;
-		}
+    } catch (e) {
+      console.error('exception inserting data: ', e);
+      return;
+    }
 
-		try {
-			// Prepare a statement
-			const stmt = _db.prepare(`
+    try {
+      // Prepare a statement
+      const stmt = _db.prepare(`
             SELECT * 
             FROM images;
         `);
 
-			stmt.getAsObject({ $start: 1, $end: 1 }); // {col1:1, col2:111}
+      stmt.getAsObject({ $start: 1, $end: 1 }); // {col1:1, col2:111}
 
-			// Bind new values
-			stmt.bind({ $start: 1, $end: 2 });
-			while (stmt.step()) {
-				//
-				const row = stmt.getAsObject();
-				console.log('Here is a row: ' + JSON.stringify(row));
-			}
-		} catch (e) {
-			console.error('exception selecting data: ', e);
-			return;
-		}
-	};
+      // Bind new values
+      stmt.bind({ $start: 1, $end: 2 });
+      while (stmt.step()) {
+        //
+        const row = stmt.getAsObject();
+        console.log('Here is a row: ' + JSON.stringify(row));
+      }
+    } catch (e) {
+      console.error('exception selecting data: ', e);
+      return;
+    }
+  };
 
-	export async function initDB() {
-		console.log('Initializing DB');
+  export async function initDB() {
+    console.log('Initializing DB');
 
-		if (_db === undefined) {
-			console.error('DB is undefined');
-			return;
-		}
+    if (_db === undefined) {
+      console.error('DB is undefined');
+      return;
+    }
 
-		try {
-			// Create a table "images" with the columns, id, path, title, description
-			_db.run(`
+    try {
+      // Create a table "images" with the columns, id, path, title, description
+      _db.run(`
 				CREATE TABLE images (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
 					path TEXT,
@@ -90,100 +90,88 @@
 					description TEXT
 				);
 			`);
-			// Create a table "tagmap" with the columns, id, image_id, tag_id
-			_db.run(`
+      // Create a table "tagmap" with the columns, id, image_id, tag_id
+      _db.run(`
 				CREATE TABLE tagmap (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
 					image_id INTEGER,
 					tag_id INTEGER
 				);
 			`);
-			// Create a table "tags" with the columns, id, name
-			_db.run(`
+      // Create a table "tags" with the columns, id, name
+      _db.run(`
 				CREATE TABLE tags (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
 					name TEXT
 				);
 			`);
-		} catch (e) {
-			console.error('exception creating tables: ', e);
-			return;
-		}
-	}
+    } catch (e) {
+      console.error('exception creating tables: ', e);
+      return;
+    }
+  }
 
-	// A function that takes a list of image paths and inserts them into the database
-	export async function insertImages(imagePaths: string[]) {
-		console.log('Inserting images');
+  // A function that takes a list of image paths and inserts them into the database
+  export async function insertImages(images: Array<image>) {
+    console.log('Inserting images');
 
-		if (_db === undefined) {
-			console.error('DB is undefined');
-			return;
-		}
+    if (_db === undefined) {
+      console.error('DB is undefined');
+      return;
+    }
 
-		try {
-			// Prepare a statement
-			const stmt = _db.prepare(`
-				INSERT INTO images (path, title, description)
-				VALUES
-					(:path, :title, :description);
-			`);
+    try {
+      // Insert the images into the database
+      for (const image of images) {
+        _db.run(`
+          INSERT INTO images (path, title, description)
+          VALUES
+            ('${image.path}', '${image.title}', '${image.description}');
+        `);
+      }
+    } catch (e) {
+      console.error('exception inserting data: ', e);
+      return;
+    }
+  }
 
-			// Bind values to the parameters and execute the statement
-			let i = 1;
-			for (const imagePath of imagePaths) {
-				stmt.run({
-					':path': imagePath,
-					':title': 'Image Title' + i,
-					':description': 'Image Description ' + i++
-				});
-			}
-		} catch (e) {
-			console.error('exception inserting data: ', e);
-			return;
-		}
-	}
+  export async function listImages(maxResults: number): Promise<Array<image>> {
+    console.log('Listing images');
 
-	export async function testInsertImages() {
-		const someImagePaths: Array<string> = ['/images/1.jpg', '/images/2.jpg', '/images/3.jpg'];
-		await insertImages(someImagePaths);
-	}
+    if (_db === undefined) {
+      console.error('DB is undefined');
+      return [];
+    }
 
-	export async function listImages(): Promise<Array<image>> {
-		console.log('Listing images');
+    try {
+      // Prepare a statement which selects all images from the database but only returns the first maxResults
+      const stmt = _db.prepare(`
+            SELECT * 
+            FROM images
+            LIMIT ${maxResults};
+        `);
 
-		if (_db === undefined) {
-			console.error('DB is undefined');
-			return [];
-		}
+      stmt.getAsObject({ $start: 1, $end: 1 }); // {col1:1, col2:111}
 
-		try {
-			// Prepare a statement
-			const stmt = _db.prepare(`
-				SELECT * 
-				FROM images;
-			`);
+      // declare images to be an array of image objects
+      let images: Array<image> = [];
 
-			stmt.getAsObject({ $start: 1, $end: 1 }); // {col1:1, col2:111}
+      // Bind new values
+      stmt.bind({ $start: 1, $end: 2 });
+      while (stmt.step()) {
+        //
+        const row = stmt.getAsObject();
+        console.log('Here is a row: ' + JSON.stringify(row));
+        const nextTitle: string = row.title?.toLocaleString()!;
+        const nextDescription: string = row.description?.toLocaleString()!;
+        const nextPath: string = row.path?.toLocaleString()!;
+        images.push({ title: nextTitle, description: nextDescription, path: nextPath });
+      }
 
-			// declare images to be an array of image objects
-			let images: Array<image> = [];
-
-			// Bind new values
-			stmt.bind({ $start: 1, $end: 2 });
-			while (stmt.step()) {
-				//
-				const row = stmt.getAsObject();
-				console.log('Here is a row: ' + JSON.stringify(row));
-				const nextTitle: string = row.title?.toLocaleString()!;
-				const nextDescription: string = row.description?.toLocaleString()!;
-				const nextPath: string = row.path?.toLocaleString()!;
-				images.push({ title: nextTitle, description: nextDescription, path: nextPath });
-			}
-
-			return images;
-		} catch (e) {
-			console.error('exception selecting data: ', e);
-			return [];
-		}
-	}
+      return images;
+    } catch (e) {
+      console.error('exception selecting data: ', e);
+      return [];
+    }
+  }
 </script>
